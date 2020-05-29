@@ -1,6 +1,6 @@
 # Voice match application
 
-A Final year project to match voices through voice processing.
+My Advanced diploma final year project to match voices from this mobile application through voice.
 
 ## Getting Started
 
