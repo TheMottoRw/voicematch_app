@@ -1,6 +1,6 @@
 # Voice match application
 
-My Advanced diploma final year project to match voices from this mobile application through voice.
+My Advanced diploma final year project to match voices from this mobile application.
 
 ## Getting Started
 
