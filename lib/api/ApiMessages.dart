@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:voicematch/api/SampleRequest.dart';
+import 'package:voicematch/models/message_model.dart';
 
 class ApiMessages{
-
-  static Future create(String sender,String voices,String caption,String receiver) async{
-    String url = 'http://192.168.56.1/chats';
+  static String hostUrl  = SampleHttpRequest.host;
+  static Future<String> create(String sender,String voices,String caption,String receiver) async{
+    String url = hostUrl+'/chatting';
     Map<String,String> js = {"sender":sender,"voices":voices,"caption":caption,"receiver":receiver};
 
     Response response = await post(url,headers: null,body: js);
@@ -13,20 +16,47 @@ class ApiMessages{
     return response.body;
   }
 
-  dynamic loadChats() async{
-    String url = 'http://192.168.56.1:5000/chats';
+  static Future<List<Message>> loadChats(String sender,String receiver) async{
+    String url = hostUrl+'/chatting?sender=$sender&receiver=$receiver';
     Response response = await get(url);
-
+    List<Message> chatList = List<Message>();
     int statusCode = response.statusCode;
-    Map<String, String> headers = response.headers;
-    String contentType = headers['content-type'];
-    String dataBody = response.body;
-    dynamic json = jsonDecode(response.body);
-    print("HTTP Response ContentType "+contentType+" Data "+dataBody+" Status code $statusCode");
-    return json;
+    if(statusCode == 200) {
+      Map<String, String> headers = response.headers;
+      String contentType = headers['content-type'];
+      String dataBody = response.body;
+      final jsonItems = jsonDecode(response.body).cast<Map<String,dynamic>>();
+      chatList = jsonItems.map<Message>((chat){
+        return Message.fromJson(chat);
+      }).toList();
+    }
+    return chatList;
+  }
+  static Future<List<Message>> loadRecentChats() async{
+    String user = '',url = '';
+    Response response;
+    List<Message> chatList = List();
+    //read user session id
+    SharedPreferences sh = await SharedPreferences.getInstance();
+    user = sh.getString("sessid") ?? "";
+
+      url = hostUrl + '/recent?sender=$user';
+      response = await get(url);
+      chatList = List<Message>();
+      int statusCode = response.statusCode;
+      if(statusCode == 200) {
+        Map<String, String> headers = response.headers;
+        String contentType = headers['content-type'];
+        String dataBody = response.body;
+        final jsonItems = jsonDecode(response.body).cast<Map<String, dynamic>>();
+        chatList = jsonItems.map<Message>((chat) {
+          return Message.fromJson(chat);
+        }).toList();
+      }
+    return chatList;
   }
   dynamic loadChatsById(int id) async{
-    String url = 'http://192.168.56.1:5000/chat/$id';
+    String url = hostUrl+'/chat/$id';
     Response response = await get(url);
 
     int statusCode = response.statusCode;
@@ -38,7 +68,7 @@ class ApiMessages{
     return json;
   }
   static Future delete(int id,String name,String phone) async{
-    String url = 'http://192.168.56.1:5000/chat/$id';
+    String url = hostUrl+'/chat/$id';
     Map<String,String> js = {"name":name,"phone":phone};
 
     Response response = await post(url,headers: null,body: js);
@@ -47,4 +77,9 @@ class ApiMessages{
     return response.body;
   }
 
+  static Future<String> _getSession() async {
+    SharedPreferences sh = await SharedPreferences.getInstance();
+    String userId = sh.getString("sessid") ?? "";
+    return userId;
+  }
 }

@@ -1,5 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:voicematch/api/ApiMessages.dart';
+import 'package:voicematch/models/message_model.dart';
 import 'package:voicematch/widgets/recent_chats.dart';
 
 void main() => runApp(ChatApp());
@@ -14,12 +20,12 @@ class ChatApp extends StatelessWidget {
         primarySwatch: Colors.blueGrey,
         accentColor: Colors.grey,
       ),
-      home: HomeScreen(),
+      home: ChatUI(),
     );
   }
 }
 
-class HomeScreen extends StatefulWidget {
+class ChatUI extends StatefulWidget {
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -49,16 +55,26 @@ class _HomeScreenState extends State{
           )
         ],
       ),
-      body: HomeScreenUI(),
+      body: HomeScreenUI()
     );
   }
 }
 
 class HomeScreenUI extends StatelessWidget {
+  int receiver = 0;
+  String receiverName = "";
   TextEditingController messageController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    var userData = jsonDecode(ModalRoute
+        .of(context)
+        .settings
+        .arguments);
+    print("data "+userData['receiverName']);
+        receiver = userData['receiver'];
+        receiverName = userData['receiverName'];
+        print("Receiver $receiver - $receiverName");
     return Column(
       children: <Widget>[
         Expanded(
@@ -71,7 +87,25 @@ class HomeScreenUI extends StatelessWidget {
                     topRight: Radius.circular(30.0))),
             child: Column(
               children: <Widget>[
-                RecentChat(),
+                FutureBuilder<List<Message>>(
+                  future: _getSession().then((value) => ApiMessages.loadChats(value,receiver.toString())),
+                  builder: (context, snapshot){
+                    // print("Kept loading msg "+snapshot.data.toString());
+                    if(!snapshot.hasData) return Center(child: CircularProgressIndicator());
+                    print("Message found "+snapshot.data.toString());
+
+                    // Message.chats = snapshot.data;
+                    return ChatRow(chats: snapshot.data);
+                    /*return ListView(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.fromLTRB(2.0, 10.0, 2.0, 10.0),
+                      children: snapshot.data.map((msg){
+                        ChatRow(image:'assets/logo.png',name:msg.chat_with.name,caption:msg.caption,time:msg.time,unread:false);
+                      }).toList(),
+                    );
+                    */
+                  },
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -121,7 +155,10 @@ class HomeScreenUI extends StatelessWidget {
                           Icons.send,
                           color: Colors.white,
                         ),
-                        onTap: () => sendMessage(messageController.text),
+                        onTap: () {
+                          sendMessage(messageController.text);
+                          messageController.clear();
+                          },
                       ),
                     ),
                   ],
@@ -136,6 +173,30 @@ class HomeScreenUI extends StatelessWidget {
 
   void sendMessage(String message) {
     //call message sender api
-    print("Message to be sent " + message);
+    var sender = _getSession(),receiver = this.receiver.toString(),voices = "";
+    const platform = const MethodChannel("toast.flutter.io/toast");
+    sender.then((sender){
+        var resp = ApiMessages.create(sender, voices, message, receiver);
+        print("Message to be sent " + message+" Sender $sender Receiver $receiver");
+        resp.then((value){
+          if(value=='ok') platform.invokeMethod("showToast", {"message": "Message sent succeful"});
+          else platform.invokeMethod("showToast", {"message": "Message not sent,something went wrong"});
+        });
+    });
+
   }
+  static Future<String> _getSession() async {
+    SharedPreferences sh = await SharedPreferences.getInstance();
+    String userId = await sh.getString("sessid") ?? "";
+    return userId;
+  }
+  static String _getSessionData(){
+    String val = "";
+    _getSession().then((value) {
+      val = value;
+    });
+    print("sessid $val");
+    return val;
+  }
+
 }

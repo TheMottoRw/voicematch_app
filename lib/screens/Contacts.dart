@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:voicematch/api/ApiContacts.dart';
+import 'package:voicematch/models/user_model.dart';
 
 import 'Chat.dart';
 
@@ -23,52 +27,62 @@ class MyContactInfo extends StatelessWidget{
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body:  ListView(
+      body: FutureBuilder<List<User>>(
+        future: ApiContacts.loadContacts(),
+        builder: (context, snapshot){
+          if(!snapshot.hasData) return Center(child: CircularProgressIndicator());
+         return ListView(
               shrinkWrap: true,
               padding: const EdgeInsets.fromLTRB(2.0,10.0,2.0,10.0),
-              children: <Widget>[
-                MyContactCard(image: 'asua.png',name:'Manzi Roger Asua',gender: 'Male',address: 'Sud,Kamonyi'),
-                MyContactCard(image: 'kabaka.png',name:'Igihozo Didier Kabaka',gender: 'Male',address: 'Musanze,Nord'),
-                MyContactCard(image: 'imenye_logo.png',name: 'Imenye platform',gender: 'Company',address: 'Telecom house'),
-            ],
-          ),
+              children: snapshot.data.map((e) => MyContactCard(id: e.id,image: e.imageUrl,name: e.name,phone: e.contact,address: 'dx')).toList(),
+          );
+        },
+      )
     );
   }
 }
 class MyContactCard extends StatelessWidget{
-  MyContactCard({Key key,this.image,this.name,this.gender,this.address}) : super(key:key);
-  final String image,name,gender,address;
+  MyContactCard({Key key,this.id,this.image,this.name,this.phone,this.address}) : super(key:key);
+  final String image,name,phone,address;
+  final int id;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(2),
+      padding: EdgeInsets.all(5),
       height: 120,
       child: Card(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
-            Image.asset('assets/'+this.image),
+            CircleAvatar(
+              backgroundImage: AssetImage(this.image),
+              radius: (40),
+              ),
             Expanded(
               child: Container(
-                padding: EdgeInsets.all(5),
+                padding: EdgeInsets.all(20),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+
                   children: <Widget>[
-                    Text(this.name,
-                    style: TextStyle(fontWeight: FontWeight.bold),),
-                    Text(this.gender),
-                    Text("Location:"+this.address),
                     GestureDetector(
-                      child: new Text("More"),
+                      child: Text(this.name,style: TextStyle(fontWeight: FontWeight.bold),),
                       onTap: (){
 //                        _showDialog(context,'tapped',this.name,this.address);
+                      var receiverObj = '{"receiver":${this.id},"receiverName":"${this.name}"}';
                         Navigator.push(context,
                             MaterialPageRoute(
-                              builder: (context) => ChatApp(),
+                                builder: (context) => ChatUI(),
+                                settings: RouteSettings(arguments: receiverObj)
                             ));
                       },
                     ),
+
+                    Text(this.phone),
+                    // Text("Location:"+this.address),
+
                   ],
                 ),
               ),
@@ -95,4 +109,9 @@ class MyContactCard extends StatelessWidget{
       }
     );
   }
+}
+class UserObj{
+  int receiver;
+  String receiverName;
+  UserObj({this.receiver,this.receiverName});
 }

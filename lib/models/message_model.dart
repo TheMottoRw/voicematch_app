@@ -1,12 +1,27 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voicematch/models/user_model.dart';
+import 'package:voicematch/screens/Chat.dart';
+import 'package:voicematch/screens/Confirm.dart';
+import 'package:voicematch/screens/Contacts.dart';
 
 class Message{
-  final User sender;
-  final String text;
+  final User chat_with;
+  final String caption;
   final String time;
   final bool isLiked;
   final bool unread;
-  Message({this.sender,this.text,this.time,this.isLiked,this.unread});
+  Message({this.chat_with,this.caption,this.time,this.isLiked,this.unread});
+
+  factory Message.fromJson(Map<String, dynamic> json){
+    var senderInfo = json['receiver_info'];
+    return Message(
+      chat_with: User(id:senderInfo['id'],name:senderInfo['name'],imageUrl:'assets/logo.png'),
+      caption: json['caption'],
+      time: json['regdate'],
+      isLiked: false,
+      unread: true,
+    );
+  }
 
   static final User currentUser = User(id:1,name:'Asua',imageUrl:'assets/asua.png',);
 
@@ -25,62 +40,13 @@ class Message{
 
 
   static final List<User> favorites = [aline,currentUser,kabaka];
-  static final List<Message> chats = [
+  static List<Message> chats = [
     Message(
-     sender: james,
+     chat_with: james,
     time:'16:19',
-    text:'Hello,how are you doing',
+    caption:'Hello,how are you doing',
     isLiked: false,
     unread: true,
-    ),
-    Message(
-      sender: kabaka,
-      time:'16:25',
-      text:'I am good how about you',
-      isLiked: true,
-      unread: true,
-    ),
-    Message(
-      sender: aline,
-      time:'12:45',
-      text:'Hey Dear Asua',
-      isLiked: true,
-      unread: true,
-    ),
-    Message(
-      sender: james,
-      time:'08:03',
-      text:'Hello,how are you doing',
-      isLiked: false,
-      unread: false,
-    ),
-    Message(
-      sender: john,
-      time:'06:33',
-      text:'Salama umusaza',
-      isLiked: false,
-      unread: true,
-    ),
-    Message(
-      sender: currentUser,
-      time:'12:49',
-      text:'Hi,are you good',
-      isLiked: false,
-      unread: true,
-    ),
-    Message(
-      sender: james,
-      time:'15:29',
-      text:'Wassup kinywanyi',
-      isLiked: false,
-      unread: true,
-    ),
-    Message(
-      sender: kamanzi,
-      time:'16:19',
-      text:'Salama,wangu',
-      isLiked: false,
-      unread: true,
     ),
   ];
 }

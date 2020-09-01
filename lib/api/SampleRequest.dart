@@ -1,6 +1,7 @@
 import 'package:http/http.dart';
 import 'dart:convert';
 class SampleHttpRequest{
+  static String host = "http://192.168.1.8:5000";
   void _getRequest() async{
     String url = 'http://192.168.56.1/flutter/request.php?cate=Gateway';
     Response response = await get(url);

@@ -1,51 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:voicematch/api/ApiMessages.dart';
+import 'package:voicematch/models/message_model.dart';
+import 'package:voicematch/models/user_model.dart';
 import 'package:voicematch/screens/Chat.dart';
 
 void main() => runApp(MyRecentChat());
 
-class MyRecentChat extends StatelessWidget{
+class MyRecentChat extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'User profile',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-      ),
-      home: MyRecentChatInfo(),
-    );
-  }
+  _State createState() => _State();
 }
-class MyRecentChatInfo extends StatelessWidget{
-  MyRecentChatInfo({this.title});
-  final String title;
+
+class _State extends State {
+  // final String title;
+  var data;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body:  ListView(
+      body: FutureBuilder<List<Message>>(
+        future: ApiMessages.loadRecentChats(),
+          builder: (context, snapshot){
+            if(!snapshot.hasData) return Center(child: CircularProgressIndicator());
+            print("Snap data "+snapshot.data.toString());
+            return ListView(
               shrinkWrap: true,
-              padding: const EdgeInsets.fromLTRB(2.0,10.0,2.0,10.0),
-              children: <Widget>[
-                MyRecentChatCard(image: 'asua.png',name:'Manzi Roger Asua',gender: 'Male',address: 'Sud,Kamonyi'),
-                MyRecentChatCard(image: 'kabaka.png',name:'Igihozo Didier Kabaka',gender: 'Male',address: 'Musanze,Nord'),
-                MyRecentChatCard(image: 'imenye_logo.png',name: 'Imenye platform',gender: 'Company',address: 'Telecom house'),
-                MyRecentChatCard(image: 'asua.png',name:'Manzi Roger Asua',gender: 'Male',address: 'Sud,Kamonyi'),
-                MyRecentChatCard(image: 'kabaka.png',name:'Igihozo Didier Kabaka',gender: 'Male',address: 'Musanze,Nord'),
-                MyRecentChatCard(image: 'imenye_logo.png',name: 'Imenye platform',gender: 'Company',address: 'Telecom house'),
-                MyRecentChatCard(image: 'asua.png',name:'Manzi Roger Asua',gender: 'Male',address: 'Sud,Kamonyi'),
-                MyRecentChatCard(image: 'kabaka.png',name:'Igihozo Didier Kabaka',gender: 'Male',address: 'Musanze,Nord'),
-                MyRecentChatCard(image: 'imenye_logo.png',name: 'Imenye platform',gender: 'Company',address: 'Telecom house'),
-                MyRecentChatCard(image: 'asua.png',name:'Manzi Roger Asua',gender: 'Male',address: 'Sud,Kamonyi'),
-                MyRecentChatCard(image: 'kabaka.png',name:'Igihozo Didier Kabaka',gender: 'Male',address: 'Musanze,Nord'),
-                MyRecentChatCard(image: 'imenye_logo.png',name: 'Imenye platform',gender: 'Company',address: 'Telecom house'),
-            ],
-          ),
+              padding: const EdgeInsets.fromLTRB(2.0, 10.0, 2.0, 10.0),
+              children: snapshot.data.map((e) =>  MyRecentChatCard(image: 'asua.png',chat_with: e.chat_with,text: e.caption,date: e.time)).toList()
+            );
+          },
+      ),
     );
   }
 }
-class MyRecentChatCard extends StatelessWidget{
-  MyRecentChatCard({Key key,this.image,this.name,this.gender,this.address}) : super(key:key);
-  final String image,name,gender,address;
+
+class MyRecentChatCard extends StatelessWidget {
+  MyRecentChatCard({Key key, this.image, this.chat_with, this.text, this.date})
+      : super(key: key);
+  final User chat_with;
+  final String image, text, date;
 
   @override
   Widget build(BuildContext context) {
@@ -56,27 +57,34 @@ class MyRecentChatCard extends StatelessWidget{
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
-            Image.asset('assets/'+this.image),
+            Image.asset('assets/' + this.image),
             Expanded(
               child: Container(
-                padding: EdgeInsets.all(5),
+                padding: EdgeInsets.only(left: 20,right: 20),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(this.name,
-                    style: TextStyle(fontWeight: FontWeight.bold),),
-                    Text(this.gender),
-                    Text("Location:"+this.address),
+
                     GestureDetector(
-                      child: new Text("More"),
-                      onTap: (){
+                      child: Text(this.chat_with.name,style: TextStyle(fontWeight: FontWeight.bold),),
+                      onTap: () {
 //                        _showDialog(context,'tapped',this.name,this.address);
+                        var receiverObj = '{"receiver":${this.chat_with.id},"receiverName":"${this.chat_with.name}"}';
                         Navigator.push(context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatApp(),
-                        ));
+                            MaterialPageRoute(
+                              builder: (context) => ChatUI(),
+                              settings: RouteSettings(arguments: receiverObj),
+                            ));
                       },
                     ),
+                    Text(this.text,style: TextStyle(fontSize: 13),),
+                    Container(
+                    alignment: Alignment.bottomRight,
+                    padding: EdgeInsets.all(2),
+                    child:Text(this.date.substring(5,22),style: TextStyle(fontSize: 10,color: Color.fromRGBO(120, 125, 125, 1)),),
+                    ),
+                    
                   ],
                 ),
               ),
@@ -86,21 +94,28 @@ class MyRecentChatCard extends StatelessWidget{
       ),
     );
   }
-  void _showDialog(BuildContext context,event,name,address){
+
+  void _showDialog(BuildContext context, event, name, address) {
     showDialog(
-      context: context,
-      builder: (BuildContext){
-        return AlertDialog(
-          title: Text('User details '+event),
-          content: new Text(name+"\n"+" live in "+address),
-          actions: <Widget>[
-            new FlatButton(
-                onPressed: (){
-              Navigator.of(context).pop();
-            }, child: new Text("Close"))
-          ],
-        );
-      }
+        context: context,
+        builder: (BuildContext) {
+          return AlertDialog(
+            title: Text('User details ' + event),
+            content: new Text(name + "\n" + " live in " + address),
+            actions: <Widget>[
+              new FlatButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  }, child: new Text("Close"))
+            ],
+          );
+        }
     );
+  }
+
+  static Future<String> _getSession() async {
+    SharedPreferences sh = await SharedPreferences.getInstance();
+    String userId = await sh.getString("sessid") ?? "";
+    return userId;
   }
 }

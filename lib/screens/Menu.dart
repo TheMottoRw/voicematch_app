@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voicematch/screens/Contacts.dart';
 import 'package:voicematch/screens/RecentChat.dart';
 
@@ -52,7 +53,7 @@ class _MyTabHomeState extends State{
         ),
         body: TabBarView(
           children: <Widget>[
-            Center(child: MyRecentChatInfo()),
+            Center(child: MyRecentChat()),
             Center(child: MyContactInfo()),
           ],
         ),
