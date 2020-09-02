@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:percent_indicator/percent_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voicematch/api/ApiMessages.dart';
 import 'package:voicematch/models/message_model.dart';
 import 'package:voicematch/widgets/recent_chats.dart';
+import 'package:medcorder_audio/medcorder_audio.dart';
 
 void main() => runApp(ChatApp());
 
@@ -31,8 +34,121 @@ class ChatUI extends StatefulWidget {
 }
 
 class _HomeScreenState extends State{
+  int receiver = 0;
+  String receiverName = "";
+  TextEditingController messageController = TextEditingController();
+
+  MedcorderAudio audioModule = new MedcorderAudio();
+  bool canRecord = false;
+  double recordPower = 0.0;
+  double recordPosition = 0.0;
+  bool isRecord = false;
+  bool isPlay = false;
+  double playPosition = 0.0;
+  String file = "";
+  double playProgress = 0;
+
+
+  @override
+  initState() {
+    super.initState();
+    audioModule.setCallBack((dynamic data) {
+      _onEvent(data);
+      print("Data check "+data.toString());
+    });
+    _initSettings();
+  }
+
+  Future _initSettings() async {
+    final String result = await audioModule.checkMicrophonePermissions();
+    if (result == 'OK') {
+      await audioModule.setAudioSettings();
+      setState(() {
+        canRecord = true;
+      });
+    }
+    return;
+  }
+
+  Future _startRecord() async {
+    try {
+      DateTime time = new DateTime.now();
+      setState(() {
+        file = time.millisecondsSinceEpoch.toString();
+      });
+      final String result = await audioModule.startRecord(file);
+      setState(() {
+        isRecord = true;
+      });
+      print('startRecord: ' + result);
+    } catch (e) {
+      file = "";
+      print('startRecord: fail');
+    }
+  }
+
+  Future _stopRecord() async {
+    try {
+      final String result = await audioModule.stopRecord();
+      print('stopRecord: ' + result);
+      setState(() {
+        isRecord = false;
+      });
+    } catch (e) {
+      print('stopRecord: fail');
+      setState(() {
+        isRecord = false;
+      });
+    }
+  }
+
+  Future _startStopPlay() async {
+    if (isPlay) {
+      await audioModule.stopPlay();
+    } else {
+      await audioModule.startPlay({
+        "file": file,
+        "position": 0.0,
+      });
+    }
+  }
+
+  void _onEvent(dynamic event) {
+    if (event['code'] == 'recording') {
+      double power = event['peakPowerForChannel'];
+      setState(() {
+        recordPower = (60.0 - power.abs().floor()).abs();
+        recordPosition = event['currentTime'];
+      });
+    }
+    if (event['code'] == 'playing') {
+      String url = event['url'];
+      setState(() {
+        playPosition = event['currentTime'];
+        playProgress = event['currentTime'] /event['duration'];
+        isPlay = true;
+      });
+    }
+    if (event['code'] == 'audioPlayerDidFinishPlaying') {
+      setState(() {
+        playPosition = 0.0;
+        playProgress = 0.0;
+        isPlay = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    var userData = jsonDecode(ModalRoute
+        .of(context)
+        .settings
+        .arguments);
+    print("data "+userData['receiverName']);
+    receiver = userData['receiver'];
+    receiverName = userData['receiverName'];
+    print("Receiver $receiver - $receiverName");
+
     return Scaffold(
       backgroundColor: Theme.of(context).primaryColor,
       appBar: AppBar(
@@ -55,27 +171,7 @@ class _HomeScreenState extends State{
           )
         ],
       ),
-      body: HomeScreenUI()
-    );
-  }
-}
-
-class HomeScreenUI extends StatelessWidget {
-  int receiver = 0;
-  String receiverName = "";
-  TextEditingController messageController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    var userData = jsonDecode(ModalRoute
-        .of(context)
-        .settings
-        .arguments);
-    print("data "+userData['receiverName']);
-        receiver = userData['receiver'];
-        receiverName = userData['receiverName'];
-        print("Receiver $receiver - $receiverName");
-    return Column(
+      body: Column(
       children: <Widget>[
         Expanded(
           child: Container(
@@ -106,22 +202,76 @@ class HomeScreenUI extends StatelessWidget {
                     */
                   },
                 ),
-                Row(
+                Column(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(30)),
-                          color: Colors.blueGrey),
-                      child: Icon(
-                        Icons.mic,
-                        color: Colors.white,
-                      ),
-                      height: 40,
-                      width: 40,
+
+                canRecord? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        isRecord?new Text('Rec: ' + recordPosition.round().toString()+"s"):new Text(''),
+                        //new Text('power: ' + recordPower.toString()),
+
+                        isPlay?new Text('Playing: ' + playPosition.round().toString()+"s"):new Text(''),
+                        file!=""?Row(
+                          children: [
+                            new InkWell(
+                              child: isPlay? new Icon(Icons.pause_circle_filled,color: Colors.blueGrey,size: 50.0,): new Icon(Icons.play_circle_filled,color: Colors.blueGrey,size: 50.0,),
+                              onTap: (){
+                                if (!isRecord && file.length > 0) {
+                                  _startStopPlay();
+                                }
+                              },
+                            ),
+                            new LinearPercentIndicator(
+                              width: 250.0,
+                              alignment: MainAxisAlignment.center,
+                              lineHeight: 20.0,
+                              percent: playProgress,
+                              progressColor: Colors.blueGrey,
+                            ),
+                            new InkWell(
+                              child: file!=""? new Icon(Icons.delete_outline,color: Colors.brown,size: 40.0,): Text(''),
+                              onTap: (){
+                                //call delete file
+
+                              },
+                            ),
+                          ],
+                        ):Text(''),
+                      ],
+                    )
+                    : Text(
+                      'Microphone Access Disabled.\nYou can enable access in Settings',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.blueGrey,fontSize: 10.0),
                     ),
+                    //end recording part
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          Container(
+                            height: 40,
+                            width: 40,
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.all(Radius.circular(30)),
+                                color: Colors.blueGrey),
+                            child: InkWell(
+                              child: isRecord? new Icon(Icons.record_voice_over,color: Colors.white): new Icon(Icons.keyboard_voice,color: Colors.white),
+                              onTap: (){
+                                if(!isRecord){
+                                  _startRecord();
+                                  isRecord = true;
+                                } else {
+                                  _stopRecord();
+                                  isRecord = false;
+                                }
+                              },
+                            ) ,
+                          ),
                     Container(
-                      width: 300,
+                      width: 250,
                       height: 70,
                       decoration: BoxDecoration(
                         borderRadius:
@@ -165,9 +315,11 @@ class HomeScreenUI extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        )
-      ],
+          ],
+        ),
+      ),
+    ),
+    ])
     );
   }
 

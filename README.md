@@ -1,6 +1,6 @@
 # Voice match application
 
-My Advanced diploma final year project to match voices from this mobile application.
+This is my Advanced diploma final year project to match voices from this mobile application.
 
 ## Getting Started
 
@@ -15,3 +15,33 @@ Few resources to get started with this demo mobile application you:
 For help getting started with Flutter, view
 [online documentation](https://flutter.dev/docs), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+##Installation
+-You should have Flutter SDK Installed
+- Clone this project into your computer
+- In you terminal,go to project root folder and run <code>flutter pub get</code>
+
+##Medcorder setup
+
+Recorded file paths setup
+1. Edit medcorder_plugins <code>Flutter Plugins/medcorder_audio-0.0.6/android/src/main/java/co/medcorder/medcorderaudio/MedcorderAudioPlugins</code>
+2. Add below codes 
+<code>import android.os.Environment;<br>import java.io.File;</code>
+
+Line 51
+    <code>private String outputFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Voicematch/audio/";
+</code>
+ Line 128 ~ 130
+ <code>
+ File outputFolder = new File(outputFilePath);
+ //      currentOutputFile = activity.getApplicationContext().getFilesDir() + "/" + fileName + ".aac";
+       currentOutputFile =  outputFilePath+""+ fileName + ".aac";
+       if(!outputFolder.exists()) outputFolder.mkdirs();
+ </code>
+ 
+ Line 237 ~ 239
+ <code>
+ File outputFolder = new File(outputFilePath);
+     currentPlayingFile =  outputFilePath+""+ fileName + ".aac";
+     if(!outputFolder.exists()) outputFolder.mkdirs();
+   </code>
