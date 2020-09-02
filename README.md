@@ -24,7 +24,7 @@ samples, guidance on mobile development, and a full API reference.
 ## Medcorder setup
 
 Recorded file paths setup
-- Edit medcorder_plugins <code>Flutter Plugins/medcorder_audio-0.0.6/android/src/main/java/co/medcorder/medcorderaudio/MedcorderAudioPlugins</code>
+- Edit medcorder_plugins <code>External Libraries/Flutter Plugins/medcorder_audio-0.0.6/android/src/main/java/co/medcorder/medcorderaudio/MedcorderAudioPlugins</code>
 - Add below codes 
     - <code>import android.os.Environment;</code>
     - <code> import java.io.File;</code>

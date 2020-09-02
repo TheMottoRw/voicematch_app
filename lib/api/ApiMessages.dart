@@ -6,14 +6,25 @@ import 'package:voicematch/models/message_model.dart';
 
 class ApiMessages{
   static String hostUrl  = SampleHttpRequest.host;
+
   static Future<String> create(String sender,String voices,String caption,String receiver) async{
     String url = hostUrl+'/chatting';
-    Map<String,String> js = {"sender":sender,"voices":voices,"caption":caption,"receiver":receiver};
+    // Map<String,String> js = {"sender":sender,"voices":voices,"caption":caption,"receiver":receiver};
+    //
+    // Response response = await post(url,headers: null,body: js);
+    // int statusCode = response.statusCode;
+    
+    //uploading  request
+    var req = MultipartRequest('POST',Uri.parse(url));
+    req.files.add(await MultipartFile.fromPath('voices', voices));
+    req.fields['sender'] = sender;
+    req.fields['caption'] = caption;
+    req.fields['receiver'] = receiver;
+    var res = await req.send();
+    int statusCode = res.statusCode;
 
-    Response response = await post(url,headers: null,body: js);
-    int statusCode = response.statusCode;
-    print("Response data "+response.body+" Status $statusCode");
-    return response.body;
+    print("Response data "+res.reasonPhrase+" Status $statusCode");
+    return res.reasonPhrase;
   }
 
   static Future<List<Message>> loadChats(String sender,String receiver) async{

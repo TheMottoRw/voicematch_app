@@ -47,6 +47,7 @@ class _HomeScreenState extends State{
   double playPosition = 0.0;
   String file = "";
   double playProgress = 0;
+  String recordedAudioFile = "";
 
 
   @override
@@ -54,7 +55,8 @@ class _HomeScreenState extends State{
     super.initState();
     audioModule.setCallBack((dynamic data) {
       _onEvent(data);
-      print("Data check "+data.toString());
+      print("Data check "+data.toString() +" Acess URL "+data['url']);
+      recordedAudioFile = data['url'];
     });
     _initSettings();
   }
@@ -306,7 +308,7 @@ class _HomeScreenState extends State{
                           color: Colors.white,
                         ),
                         onTap: () {
-                          sendMessage(messageController.text);
+                          sendMessage(recordedAudioFile,messageController.text);
                           messageController.clear();
                           },
                       ),
@@ -323,19 +325,21 @@ class _HomeScreenState extends State{
     );
   }
 
-  void sendMessage(String message) {
+  void sendMessage(String voice,String message) {
     //call message sender api
+    print("Message to be sent Voices: $voice Message:  " + message);
+    // print("Message to be sent Voices: $voice Message:  " + message+" Sender $sender Receiver $receiver");
+
     var sender = _getSession(),receiver = this.receiver.toString(),voices = "";
     const platform = const MethodChannel("toast.flutter.io/toast");
     sender.then((sender){
-        var resp = ApiMessages.create(sender, voices, message, receiver);
-        print("Message to be sent " + message+" Sender $sender Receiver $receiver");
+        var resp = ApiMessages.create(sender, voice, message, receiver);
+        print("Message to be sent Voices: $voice Message:  " + message+" Sender $sender Receiver $receiver");
         resp.then((value){
           if(value=='ok') platform.invokeMethod("showToast", {"message": "Message sent succeful"});
           else platform.invokeMethod("showToast", {"message": "Message not sent,something went wrong"});
         });
     });
-
   }
   static Future<String> _getSession() async {
     SharedPreferences sh = await SharedPreferences.getInstance();
