@@ -32,15 +32,15 @@ Recorded file paths setup
         - <code>private String outputFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Voicematch/audio/";</code>
     - Line 128 ~ 130
          <code>
-         File outputFolder = new File(outputFilePath);\n
-         //      currentOutputFile = activity.getApplicationContext().getFilesDir() + "/" + fileName + ".aac";\n
-               currentOutputFile =  outputFilePath+""+ fileName + ".aac";\n
-               if(!outputFolder.exists()) outputFolder.mkdirs();
+         - File outputFolder = new File(outputFilePath);
+         - // currentOutputFile = activity.getApplicationContext().getFilesDir() + "/" + fileName + ".aac";
+         -  currentOutputFile =  outputFilePath+""+ fileName + ".aac";
+         - if(!outputFolder.exists()) outputFolder.mkdirs();
          </code>
  
     - Line 237 ~ 239
         <code>
-        File outputFolder = new File(outputFilePath);\n
-         currentPlayingFile =  outputFilePath+""+ fileName + ".aac";\n
-         if(!outputFolder.exists()) outputFolder.mkdirs();
+        - File outputFolder = new File(outputFilePath);
+        - currentPlayingFile =  outputFilePath+""+ fileName + ".aac";
+        - if(!outputFolder.exists()) outputFolder.mkdirs();
         </code>
